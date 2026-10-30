@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Le Mie Finanze</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f5bd3">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Finanze">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16191d;--mut:#667085;--line:#e4e7ec;--acc:#2f5bd3;--in:#12805c;--out:#c4322b;--soft:#eef2fb}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a20;--ink:#e8eaed;--mut:#98a2b3;--line:#2a2f38;--acc:#7b9cff;--in:#3ccf91;--out:#ff6b63;--soft:#1e2430}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card);gap:12px;flex-wrap:wrap}
+h1{font-size:18px;margin:0}
+.nw{text-align:right}.nw small{color:var(--mut);display:block;font-size:12px}.nw b{font-size:20px;font-variant-numeric:tabular-nums}
+nav{display:flex;gap:4px;padding:8px 16px;background:var(--card);border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{border:0;background:none;color:var(--mut);padding:8px 12px;border-radius:8px;cursor:pointer;font:inherit;white-space:nowrap}
+nav button.on{background:var(--soft);color:var(--acc);font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+section{display:none}section.on{display:block}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.kpi small{color:var(--mut);font-size:12px;display:block}.kpi b{font-size:19px;font-variant-numeric:tabular-nums}
+h2{font-size:15px;margin:0 0 12px}
+.two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+form.f{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.btn{font:inherit;border:0;border-radius:8px;padding:9px 14px;background:var(--acc);color:#fff;cursor:pointer;font-weight:600}
+.btn.g{background:var(--soft);color:var(--ink)}
+.x{border:0;background:none;color:var(--mut);cursor:pointer;padding:2px 6px;font:inherit}
+.x:hover{color:var(--acc)}.x.del:hover{color:var(--out)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.n,th.n{text-align:right}
+tfoot td{font-weight:700;border-top:2px solid var(--line)}
+td input{width:110px;padding:4px 8px;text-align:right}
+.pos{color:var(--in)}.neg{color:var(--out)}.mut{color:var(--mut)}
+.bar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;min-width:80px}.bar i{display:block;height:100%;background:var(--acc)}
+.hint{color:var(--mut);font-size:12px;margin:8px 0 0}
+svg text{fill:var(--mut);font-size:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+header{padding-top:max(16px,env(safe-area-inset-top))}
+#saveSt{cursor:pointer}
+@media (max-width:640px){input,select{font-size:16px}header{padding-left:16px;padding-right:16px}.nw b{font-size:17px}main{padding:14px 12px 60px}.card{padding:14px}}
+.leg{display:flex;gap:14px;font-size:12px;color:var(--mut)}.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Le Mie Finanze</h1><div id="saveSt" style="font-size:12px"></div></div>
+  <div class="nw"><small>Patrimonio netto</small><b id="hNw">—</b></div>
+</header>
+<nav id="nav">
+  <button data-tab="dash" class="on">Panoramica</button>
+  <button data-tab="tx">Movimenti</button>
+  <button data-tab="acc">Conti</button>
+  <button data-tab="inv">Investimenti</button>
+  <button data-tab="rep">Resoconti</button>
+  <button data-tab="set">Impostazioni</button>
+</nav>
+<main>
+
+<!-- PANORAMICA -->
+<section id="dash" class="on">
+  <div class="grid" id="dKpi"></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><h2>Ultimi 12 mesi</h2><div class="leg"><span><i style="background:var(--in)"></i>Entrate</span><span><i style="background:var(--out)"></i>Uscite</span></div></div><div id="dChart"></div></div>
+  <div class="two">
+    <div class="card"><h2>Saldi dei conti</h2><div class="tw" id="dAcc"></div></div>
+    <div class="card"><h2>Uscite del mese per categoria</h2><div class="tw" id="dCat"></div></div>
+  </div>
+</section>
+
+<!-- MOVIMENTI -->
+<section id="tx">
+  <div class="card">
+    <h2 id="tTitle">Nuovo movimento</h2>
+    <form class="f" id="txF">
+      <label>Tipo<select id="tType"><option value="out">Uscita</option><option value="in">Entrata</option><option value="transfer">Trasferimento tra conti</option></select></label>
+      <label>Data<input type="date" id="tDate" required></label>
+      <label>Importo (€)<input id="tAmt" inputmode="decimal" placeholder="0,00" required></label>
+      <label>Conto<select id="tAcc"></select></label>
+      <label id="tToL">Verso conto<select id="tTo"></select></label>
+      <label id="tCatL">Categoria<select id="tCat"></select></label>
+      <label>Descrizione<input id="tNote" placeholder="es. Spesa supermercato"></label>
+      <div class="row"><button class="btn" id="tBtn">Aggiungi</button><button type="button" class="btn g" id="tCancel" hidden>Annulla</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Elenco movimenti</h2>
+    <form class="f" id="fltF" onsubmit="return false">
+      <label>Dal<input type="date" id="fFrom"></label>
+      <label>Al<input type="date" id="fTo"></label>
+      <label>Tipo<select id="fType"><option value="">Tutti</option><option value="in">Entrate</option><option value="out">Uscite</option><option value="transfer">Trasferimenti</option></select></label>
+      <label>Conto<select id="fAcc"></select></label>
+      <label>Categoria<select id="fCat"></select></label>
+      <label>Cerca<input id="fQ" placeholder="testo…"></label>
+    </form>
+    <div class="tw" style="margin-top:12px" id="txList"></div>
+  </div>
+</section>
+
+<!-- CONTI -->
+<section id="acc">
+  <div class="card">
+    <h2>Nuovo conto</h2>
+    <form class="f" id="accF">
+      <label>Nome<input id="aName" required placeholder="es. Intesa, Revolut, Contanti"></label>
+      <label>Tipo<select id="aType"><option>Conto corrente</option><option>Conto deposito</option><option>Contanti</option><option>Carta prepagata</option><option>Conto titoli / broker</option><option>Altro</option></select></label>
+      <label>Saldo iniziale (€)<input id="aInit" inputmode="decimal" placeholder="0,00"></label>
+      <div><button class="btn">Aggiungi conto</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Riconciliazione dei saldi</h2>
+    <div class="tw" id="accList"></div>
+    <p class="hint">Saldo = Iniziale + Entrate − Uscite + Trasf. ricevuti − Trasf. inviati + Flussi investimenti. Ogni cifra è calcolata dai movimenti: nessun saldo è inserito a mano.</p>
+  </div>
+</section>
+
+<!-- INVESTIMENTI -->
+<section id="inv">
+  <div class="two">
+    <div class="card">
+      <h2>Nuovo strumento</h2>
+      <form class="f" id="invF">
+        <label>Nome<input id="iName" required placeholder="es. Vanguard FTSE All-World"></label>
+        <label>Ticker / ISIN<input id="iTick" placeholder="es. VWCE"></label>
+        <label>Classe<select id="iClass"><option>Azioni</option><option>ETF</option><option>Obbligazioni</option><option>Titoli di Stato</option><option>Fondi</option><option>Crypto</option><option>Materie prime</option><option>Conto deposito</option><option>Altro</option></select></label>
+        <label>Conto di regolamento<select id="iAcc"></select></label>
+        <label>Prezzo attuale (€)<input id="iPrice" inputmode="decimal" placeholder="0,00"></label>
+        <div><button class="btn">Aggiungi</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Nuova operazione</h2>
+      <form class="f" id="opF">
+        <label>Strumento<select id="oInv"></select></label>
+        <label>Operazione<select id="oType"><option value="buy">Acquisto</option><option value="sell">Vendita</option><option value="div">Dividendo / cedola</option></select></label>
+        <label>Data<input type="date" id="oDate" required></label>
+        <label class="oQ">Quantità<input id="oQty" inputmode="decimal" placeholder="0"></label>
+        <label class="oQ">Prezzo unitario (€)<input id="oPrice" inputmode="decimal" placeholder="0,00"></label>
+        <label class="oD" hidden>Importo netto (€)<input id="oAmt" inputmode="decimal" placeholder="0,00"></label>
+        <label class="oQ">Commissioni (€)<input id="oFees" inputmode="decimal" placeholder="0,00"></label>
+        <div><button class="btn">Registra</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="card"><h2>Portafoglio</h2><div class="tw" id="posList"></div>
+    <p class="hint">Metodo del costo medio ponderato (PMC). Il costo include le commissioni. Rendimento totale = Plus/minus realizzate + non realizzate + dividendi, rapportato al capitale totale investito. Aggiorna il prezzo direttamente in tabella.</p></div>
+  <div class="card"><h2>Storico operazioni</h2><div class="tw" id="opList"></div></div>
+</section>
+
+<!-- RESOCONTI -->
+<section id="rep">
+  <div class="card row"><label>Anno<select id="rYear"></select></label></div>
+  <div class="grid" id="rKpi"></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><h2>Andamento mensile</h2><div class="leg"><span><i style="background:var(--in)"></i>Entrate</span><span><i style="background:var(--out)"></i>Uscite</span></div></div><div id="rChart"></div><div class="tw" id="rMonth"></div></div>
+  <div class="two">
+    <div class="card"><h2>Uscite per categoria</h2><div class="tw" id="rOut"></div></div>
+    <div class="card"><h2>Entrate per categoria</h2><div class="tw" id="rIn"></div></div>
+  </div>
+  <div class="card"><h2>Allocazione del patrimonio (oggi)</h2><div class="tw" id="rAlloc"></div></div>
+</section>
+
+<!-- IMPOSTAZIONI -->
+<section id="set">
+  <div class="two">
+    <div class="card">
+      <h2>Categorie</h2>
+      <form class="f" id="catF">
+        <label>Nome<input id="cName" required></label>
+        <label>Tipo<select id="cKind"><option value="out">Uscita</option><option value="in">Entrata</option></select></label>
+        <div><button class="btn">Aggiungi</button></div>
+      </form>
+      <div class="tw" style="margin-top:12px" id="catList"></div>
+    </div>
+    <div class="card">
+      <h2>Backup e dati</h2>
+      <p class="hint" style="margin-bottom:12px" id="saveInfo"></p>
+      <div class="row">
+        <button class="btn" id="bExp">Esporta backup (JSON)</button>
+        <button class="btn g" id="bImp">Importa backup</button>
+        <button class="btn g" id="bCsv">Esporta movimenti (CSV)</button>
+        <input type="file" id="bFile" accept=".json,application/json" hidden>
+      </div>
+      <div class="row" style="margin-top:16px"><button class="btn g" id="bReset" style="color:var(--out)">Cancella tutti i dati</button></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+const KEY='finanze_v1';
+const MESI=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const DEF={v:1,
+  accounts:[{id:'a1',name:'Conto corrente',type:'Conto corrente',initial:0}],
+  categories:[
+    ...['Stipendio','Freelance / extra','Interessi','Rimborsi','Regali ricevuti','Altre entrate'].map((n,i)=>({id:'ci'+i,name:n,kind:'in'})),
+    ...['Casa / affitto / mutuo','Bollette','Spesa alimentare','Trasporti / auto','Ristoranti / bar','Salute','Abbonamenti','Svago / viaggi','Abbigliamento','Tasse','Altre uscite'].map((n,i)=>({id:'co'+i,name:n,kind:'out'}))
+  ],
+  tx:[],invs:[],ops:[]};
+
+let S=null,SERVER=false,saving=Promise.resolve(),lastSave=null,saveErr=false;
+let editing=null;
+
+// Con "Avvia Finanze" i dati vanno nel file dati/finanze.json; il browser ne tiene solo una copia di riserva.
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(!SERVER)return status();
+  const body=JSON.stringify(S);
+  saving=saving.then(()=>fetch('api/data',{method:'POST',headers:{'Content-Type':'application/json'},body}))
+    .then(r=>{if(!r.ok)throw 0;saveErr=false;lastSave=new Date();status()})
+    .catch(()=>{if(!saveErr)alert('ATTENZIONE: salvataggio non riuscito. La finestra del Terminale di "Avvia Finanze" è ancora aperta?');saveErr=true;status()});
+}
+function status(){
+  const el=$('saveSt'),info=$('saveInfo');
+  if(!SERVER){
+    const days=S.lastBackup?Math.floor((Date.now()-S.lastBackup)/864e5):null,need=S.tx.length>0&&(days===null||days>=7);
+    el.className=need?'neg':'mut';
+    el.textContent=need?'⚠ Fai un backup (tocca qui)':'✓ Salvato su questo dispositivo';
+    info.textContent='Ogni modifica viene salvata subito su questo dispositivo. Esporta un backup almeno una volta a settimana e conservalo (es. in File / Google Drive): serve se cambi o perdi il telefono. '+(days===null?'Nessun backup fatto finora.':'Ultimo backup: '+(days?days+(days===1?' giorno fa':' giorni fa'):'oggi')+'.');
+    return}
+  el.className=saveErr?'neg':'mut';
+  el.textContent=saveErr?'⚠ Salvataggio non riuscito':'✓ Salvato automaticamente'+(lastSave?' alle '+lastSave.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'');
+  info.textContent='Ogni modifica viene salvata subito nel file "dati/finanze.json" della cartella del programma. Ogni giorno viene conservata una copia in "dati/backup" (mai cancellata).';
+}
+async function init(){
+  let local=null;try{local=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  try{const r=await fetch('api/data',{cache:'no-store'});if(r.ok){const d=await r.json();SERVER=true;if(d&&d.v)S=d}}catch(e){}
+  if(!S)S=local&&local.v?local:JSON.parse(JSON.stringify(DEF));
+  $('tDate').value=today();$('oDate').value=today();
+  if(!SERVER){try{navigator.storage?.persist?.()}catch(e){}if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))navigator.serviceWorker.register('sw.js').catch(()=>{})}
+  save();render();
+}
+const $=id=>document.getElementById(id);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const FMT=new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',useGrouping:'always'});
+const eur=c=>FMT.format((c||0)/100);
+const num=(n,d=6)=>new Intl.NumberFormat('it-IT',{maximumFractionDigits:d,useGrouping:'always'}).format(n);
+const pct=x=>isFinite(x)?(x*100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+' %':'—';
+const sg=c=>c>0?'pos':c<0?'neg':'';
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+// Accetta "1.234,56", "1234,56" e "1234.56"
+function pnum(s){s=String(s??'').trim().replace(/[\s€]/g,'');if(!s)return null;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=Number(s);return isFinite(n)?n:null}
+// Tutti gli importi sono salvati in centesimi interi: niente errori di arrotondamento
+const cents=s=>{const n=pnum(s);return n===null?null:Math.round(n*100)};
+const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const fdate=d=>d.split('-').reverse().join('/');
+const byDate=(a,b)=>a.date<b.date?-1:a.date>b.date?1:0;
+const acc=id=>S.accounts.find(a=>a.id===id);
+const cat=id=>S.categories.find(c=>c.id===id);
+const inv=id=>S.invs.find(i=>i.id===id);
+const TYPE={in:'Entrata',out:'Uscita',transfer:'Trasferimento'};
+const OPT={buy:'Acquisto',sell:'Vendita',div:'Dividendo'};
+
+/* ---------- CALCOLI ---------- */
+function gross(o){return Math.round(o.qty*o.price*100)}
+function cashEffect(o){return o.type==='buy'?-(gross(o)+o.fees):o.type==='sell'?gross(o)-o.fees:o.amount}
+
+function ledger(){
+  const L={};
+  S.accounts.forEach(a=>L[a.id]={initial:a.initial,in:0,out:0,trIn:0,trOut:0,inv:0});
+  S.tx.forEach(t=>{
+    if(t.type==='in'&&L[t.accountId])L[t.accountId].in+=t.amount;
+    else if(t.type==='out'&&L[t.accountId])L[t.accountId].out+=t.amount;
+    else if(t.type==='transfer'){if(L[t.accountId])L[t.accountId].trOut+=t.amount;if(L[t.toAccountId])L[t.toAccountId].trIn+=t.amount}
+  });
+  S.ops.forEach(o=>{const i=inv(o.invId);if(i&&L[i.accountId])L[i.accountId].inv+=cashEffect(o)});
+  Object.values(L).forEach(r=>r.bal=r.initial+r.in-r.out+r.trIn-r.trOut+r.inv);
+  return L;
+}
+
+function position(i,uptoOp){
+  let qty=0,cost=0,realized=0,div=0,invested=0;
+  for(const o of S.ops.filter(o=>o.invId===i.id).sort(byDate)){
+    if(o===uptoOp)break;
+    const g=gross(o);
+    if(o.type==='buy'){qty+=o.qty;cost+=g+o.fees;invested+=g+o.fees}
+    else if(o.type==='sell'){const cs=qty>0?Math.round(cost*o.qty/qty):0;realized+=g-o.fees-cs;cost-=cs;qty-=o.qty;if(Math.abs(qty)<1e-9){qty=0;cost=0}}
+    else div+=o.amount;
+  }
+  const value=Math.round(qty*(i.price||0)*100),unreal=value-cost,total=realized+unreal+div;
+  return{qty,cost,avg:qty?cost/qty/100:0,value,unreal,realized,div,invested,total,pctU:cost?unreal/cost:NaN,pctT:invested?total/invested:NaN};
+}
+
+function totals(){
+  const L=ledger();
+  const liquid=Object.values(L).reduce((s,r)=>s+r.bal,0);
+  const invest=S.invs.reduce((s,i)=>s+position(i).value,0);
+  return{L,liquid,invest,nw:liquid+invest};
+}
+
+function flows(prefix){ // entrate/uscite (esclusi trasferimenti) per data che inizia con prefix
+  let i=0,o=0;
+  S.tx.forEach(t=>{if(!t.date.startsWith(prefix))return;if(t.type==='in')i+=t.amount;else if(t.type==='out')o+=t.amount});
+  return{in:i,out:o,net:i-o,rate:i?(i-o)/i:NaN};
+}
+
+function byCategory(prefix,kind){
+  const m={};
+  S.tx.forEach(t=>{if(t.type===kind&&t.date.startsWith(prefix))m[t.categoryId]=(m[t.categoryId]||0)+t.amount});
+  const tot=Object.values(m).reduce((a,b)=>a+b,0);
+  return{tot,rows:Object.entries(m).map(([id,v])=>({name:cat(id)?.name||'(eliminata)',v,p:tot?v/tot:0})).sort((a,b)=>b.v-a.v)};
+}
+
+/* ---------- GRAFICO ---------- */
+const short=c=>{const e=c/100;return Math.abs(e)>=1000?(e/1000).toLocaleString('it-IT',{maximumFractionDigits:1})+'k':Math.round(e).toString()};
+function chart(labels,a,b){
+  const W=640,H=220,P=36,max=Math.max(1,...a,...b),n=labels.length,bw=(W-P)/n,h=H-40;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Entrate e uscite">`;
+  for(let k=0;k<=4;k++){const y=10+h*(1-k/4);s+=`<line x1="${P}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${P-6}" y="${y+3}" text-anchor="end">${short(max*k/4)}</text>`}
+  labels.forEach((l,i)=>{
+    const x=P+i*bw,w=bw*0.34,h1=h*a[i]/max,h2=h*b[i]/max;
+    s+=`<rect x="${x+bw*0.14}" y="${H-30-h1}" width="${w}" height="${h1}" fill="var(--in)" rx="2"><title>${l} · Entrate ${eur(a[i])}</title></rect>`;
+    s+=`<rect x="${x+bw*0.14+w+2}" y="${H-30-h2}" width="${w}" height="${h2}" fill="var(--out)" rx="2"><title>${l} · Uscite ${eur(b[i])}</title></rect>`;
+    s+=`<text x="${x+bw/2}" y="${H-12}" text-anchor="middle">${l}</text>`;
+  });
+  return s+'</svg>';
+}
+const kpi=(label,val,cls='')=>`<div class="card kpi" style="margin:0"><small>${label}</small><b class="${cls}">${val}</b></div>`;
+const catTable=(r,months)=>r.rows.length?`<table><thead><tr><th>Categoria</th><th class="n">Totale</th><th class="n">%</th>${months?'<th class="n">Media/mese</th>':''}<th></th></tr></thead><tbody>${r.rows.map(x=>`<tr><td>${esc(x.name)}</td><td class="n">${eur(x.v)}</td><td class="n">${pct(x.p)}</td>${months?`<td class="n">${eur(Math.round(x.v/months))}</td>`:''}<td><div class="bar"><i style="width:${(x.p*100).toFixed(1)}%"></i></div></td></tr>`).join('')}</tbody><tfoot><tr><td>Totale</td><td class="n">${eur(r.tot)}</td><td class="n">100,00 %</td>${months?`<td class="n">${eur(Math.round(r.tot/months))}</td>`:''}<td></td></tr></tfoot></table>`:'<p class="mut">Nessun dato.</p>';
+
+/* ---------- RENDER ---------- */
+function renderDash(T){
+  const ym=today().slice(0,7),f=flows(ym);
+  $('dKpi').innerHTML=kpi('Patrimonio netto',eur(T.nw))+kpi('Liquidità',eur(T.liquid))+kpi('Investimenti (valore)',eur(T.invest))
+    +kpi('Entrate del mese',eur(f.in),'pos')+kpi('Uscite del mese',eur(f.out),'neg')+kpi('Risparmio del mese',eur(f.net)+' · '+pct(f.rate),sg(f.net));
+  const now=new Date(),lab=[],a=[],b=[];
+  for(let k=11;k>=0;k--){const d=new Date(now.getFullYear(),now.getMonth()-k,1),p=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),x=flows(p);lab.push(MESI[d.getMonth()]);a.push(x.in);b.push(x.out)}
+  $('dChart').innerHTML=chart(lab,a,b);
+  $('dAcc').innerHTML=`<table><tbody>${S.accounts.map(x=>`<tr><td>${esc(x.name)}<br><span class="mut">${esc(x.type)}</span></td><td class="n ${sg(T.L[x.id].bal)}">${eur(T.L[x.id].bal)}</td></tr>`).join('')}
+    ${S.invs.length?`<tr><td>Investimenti<br><span class="mut">valore di mercato</span></td><td class="n">${eur(T.invest)}</td></tr>`:''}</tbody><tfoot><tr><td>Totale</td><td class="n">${eur(T.nw)}</td></tr></tfoot></table>`;
+  $('dCat').innerHTML=catTable(byCategory(ym,'out'));
+}
+
+function fillSelects(){
+  const accOpts=S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  const keep=(id,html)=>{const el=$(id),v=el.value;el.innerHTML=html;if([...el.options].some(o=>o.value===v))el.value=v};
+  keep('tAcc',accOpts);keep('tTo',accOpts);
+  keep('iAcc','<option value="">— nessuno —</option>'+accOpts);
+  keep('fAcc','<option value="">Tutti</option>'+accOpts);
+  keep('fCat','<option value="">Tutte</option>'+S.categories.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.kind==='in'?'E':'U'})</option>`).join(''));
+  keep('oInv',S.invs.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join(''));
+  const yrs=new Set([today().slice(0,4),...S.tx.map(t=>t.date.slice(0,4))]);
+  keep('rYear',[...yrs].sort().reverse().map(y=>`<option>${y}</option>`).join(''));
+  syncTxForm();
+}
+function syncTxForm(){
+  const t=$('tType').value,el=$('tCat'),v=el.value;
+  $('tToL').hidden=t!=='transfer';$('tCatL').hidden=t==='transfer';
+  if(t!=='transfer'){el.innerHTML=S.categories.filter(c=>c.kind===t).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if([...el.options].some(o=>o.value===v))el.value=v}
+}
+
+function renderTx(){
+  const fr=$('fFrom').value,to=$('fTo').value,ty=$('fType').value,ac=$('fAcc').value,ca=$('fCat').value,q=$('fQ').value.trim().toLowerCase();
+  const list=S.tx.filter(t=>(!fr||t.date>=fr)&&(!to||t.date<=to)&&(!ty||t.type===ty)&&(!ac||t.accountId===ac||t.toAccountId===ac)&&(!ca||t.categoryId===ca)&&(!q||(t.note||'').toLowerCase().includes(q)))
+    .sort((a,b)=>byDate(b,a)||(b.ts||0)-(a.ts||0));
+  let ti=0,to2=0;list.forEach(t=>{if(t.type==='in')ti+=t.amount;else if(t.type==='out')to2+=t.amount});
+  $('txList').innerHTML=list.length?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Conto</th><th>Categoria</th><th>Descrizione</th><th class="n">Importo</th><th></th></tr></thead><tbody>${list.map(t=>{
+    const s=t.type==='in'?1:t.type==='out'?-1:0;
+    return `<tr><td>${fdate(t.date)}</td><td>${TYPE[t.type]}</td><td>${esc(acc(t.accountId)?.name)}${t.type==='transfer'?' → '+esc(acc(t.toAccountId)?.name):''}</td><td>${t.type==='transfer'?'<span class="mut">—</span>':esc(cat(t.categoryId)?.name||'(eliminata)')}</td><td>${esc(t.note)}</td><td class="n ${sg(s)}">${s<0?'−':s>0?'+':''}${eur(t.amount)}</td><td><button class="x" data-act="editTx" data-id="${t.id}">Modifica</button><button class="x del" data-act="delTx" data-id="${t.id}">✕</button></td></tr>`}).join('')}</tbody>
+    <tfoot><tr><td colspan="5">${list.length} movimenti · Entrate ${eur(ti)} · Uscite ${eur(to2)}</td><td class="n ${sg(ti-to2)}">${eur(ti-to2)}</td><td></td></tr></tfoot></table>`:'<p class="mut">Nessun movimento.</p>';
+}
+
+function renderAcc(T){
+  const L=T.L,sum=k=>S.accounts.reduce((s,a)=>s+L[a.id][k],0);
+  $('accList').innerHTML=`<table><thead><tr><th>Conto</th><th>Tipo</th><th class="n">Iniziale</th><th class="n">+ Entrate</th><th class="n">− Uscite</th><th class="n">+ Trasf. ric.</th><th class="n">− Trasf. inv.</th><th class="n">± Investimenti</th><th class="n">= Saldo</th><th></th></tr></thead><tbody>
+  ${S.accounts.map(a=>{const r=L[a.id];return `<tr><td>${esc(a.name)}</td><td class="mut">${esc(a.type)}</td><td class="n">${eur(r.initial)}</td><td class="n">${eur(r.in)}</td><td class="n">${eur(r.out)}</td><td class="n">${eur(r.trIn)}</td><td class="n">${eur(r.trOut)}</td><td class="n">${eur(r.inv)}</td><td class="n ${sg(r.bal)}"><b>${eur(r.bal)}</b></td><td><button class="x" data-act="renAcc" data-id="${a.id}">Modifica</button><button class="x del" data-act="delAcc" data-id="${a.id}">✕</button></td></tr>`}).join('')}</tbody>
+  <tfoot><tr><td colspan="2">Totale</td><td class="n">${eur(sum('initial'))}</td><td class="n">${eur(sum('in'))}</td><td class="n">${eur(sum('out'))}</td><td class="n">${eur(sum('trIn'))}</td><td class="n">${eur(sum('trOut'))}</td><td class="n">${eur(sum('inv'))}</td><td class="n">${eur(T.liquid)}</td><td></td></tr></tfoot></table>`;
+}
+
+function renderInv(T){
+  const P=S.invs.map(i=>({i,p:position(i)}));
+  const t=k=>P.reduce((s,x)=>s+x.p[k],0);
+  const tc=t('cost'),tu=t('unreal'),tinv=t('invested'),tt=t('total');
+  $('posList').innerHTML=P.length?`<table><thead><tr><th>Strumento</th><th>Classe</th><th class="n">Quantità</th><th class="n">PMC</th><th class="n">Prezzo</th><th class="n">Controvalore</th><th class="n">Costo</th><th class="n">P/L latente</th><th class="n">%</th><th class="n">P/L realizzato</th><th class="n">Dividendi</th><th class="n">Rend. totale</th><th class="n">% su investito</th><th class="n">Peso</th><th></th></tr></thead><tbody>
+  ${P.map(({i,p})=>`<tr><td>${esc(i.name)}<br><span class="mut">${esc(i.ticker)}${i.accountId?' · '+esc(acc(i.accountId)?.name):''}</span></td><td>${esc(i.cls)}</td><td class="n">${num(p.qty)}</td><td class="n">${p.qty?num(p.avg,4)+' €':'—'}</td>
+  <td class="n"><input data-act="price" data-id="${i.id}" value="${num(i.price||0,6)}" inputmode="decimal"></td><td class="n">${eur(p.value)}</td><td class="n">${eur(p.cost)}</td><td class="n ${sg(p.unreal)}">${eur(p.unreal)}</td><td class="n ${sg(p.unreal)}">${pct(p.pctU)}</td><td class="n ${sg(p.realized)}">${eur(p.realized)}</td><td class="n">${eur(p.div)}</td><td class="n ${sg(p.total)}"><b>${eur(p.total)}</b></td><td class="n ${sg(p.total)}">${pct(p.pctT)}</td><td class="n">${T.invest?pct(p.value/T.invest):'—'}</td><td><button class="x del" data-act="delInv" data-id="${i.id}">✕</button></td></tr>`).join('')}</tbody>
+  <tfoot><tr><td colspan="5">Totale portafoglio</td><td class="n">${eur(T.invest)}</td><td class="n">${eur(tc)}</td><td class="n ${sg(tu)}">${eur(tu)}</td><td class="n ${sg(tu)}">${pct(tc?tu/tc:NaN)}</td><td class="n">${eur(t('realized'))}</td><td class="n">${eur(t('div'))}</td><td class="n ${sg(tt)}">${eur(tt)}</td><td class="n ${sg(tt)}">${pct(tinv?tt/tinv:NaN)}</td><td class="n">${T.invest?'100,00 %':'—'}</td><td></td></tr></tfoot></table>`:'<p class="mut">Nessuno strumento. Aggiungine uno qui sopra.</p>';
+  const ops=[...S.ops].sort((a,b)=>byDate(b,a));
+  $('opList').innerHTML=ops.length?`<table><thead><tr><th>Data</th><th>Strumento</th><th>Operazione</th><th class="n">Quantità</th><th class="n">Prezzo</th><th class="n">Commissioni</th><th class="n">Flusso di cassa</th><th></th></tr></thead><tbody>
+  ${ops.map(o=>{const c=cashEffect(o);return `<tr><td>${fdate(o.date)}</td><td>${esc(inv(o.invId)?.name)}</td><td>${OPT[o.type]}</td><td class="n">${o.type==='div'?'—':num(o.qty)}</td><td class="n">${o.type==='div'?'—':num(o.price,6)+' €'}</td><td class="n">${o.type==='div'?'—':eur(o.fees)}</td><td class="n ${sg(c)}">${eur(c)}</td><td><button class="x del" data-act="delOp" data-id="${o.id}">✕</button></td></tr>`}).join('')}</tbody></table>`:'<p class="mut">Nessuna operazione.</p>';
+}
+
+function renderRep(T){
+  const y=$('rYear').value||today().slice(0,4),cy=today().slice(0,4);
+  const months=y<cy?12:y>cy?12:new Date().getMonth()+1;
+  const M=MESI.map((m,k)=>({m,...flows(y+'-'+String(k+1).padStart(2,'0'))}));
+  const Y=flows(y);
+  $('rKpi').innerHTML=kpi('Entrate '+y,eur(Y.in),'pos')+kpi('Uscite '+y,eur(Y.out),'neg')+kpi('Risparmio netto',eur(Y.net),sg(Y.net))+kpi('Tasso di risparmio',pct(Y.rate))
+    +kpi('Media uscite / mese',eur(Math.round(Y.out/months)))+kpi('Media entrate / mese',eur(Math.round(Y.in/months)));
+  $('rChart').innerHTML=chart(MESI,M.map(x=>x.in),M.map(x=>x.out));
+  let cum=0;
+  $('rMonth').innerHTML=`<table><thead><tr><th>Mese</th><th class="n">Entrate</th><th class="n">Uscite</th><th class="n">Saldo</th><th class="n">Tasso risparmio</th><th class="n">Saldo cumulato</th></tr></thead><tbody>
+  ${M.map(x=>{cum+=x.net;return `<tr><td>${x.m} ${y}</td><td class="n">${eur(x.in)}</td><td class="n">${eur(x.out)}</td><td class="n ${sg(x.net)}">${eur(x.net)}</td><td class="n">${pct(x.rate)}</td><td class="n ${sg(cum)}">${eur(cum)}</td></tr>`}).join('')}</tbody>
+  <tfoot><tr><td>Totale</td><td class="n">${eur(Y.in)}</td><td class="n">${eur(Y.out)}</td><td class="n ${sg(Y.net)}">${eur(Y.net)}</td><td class="n">${pct(Y.rate)}</td><td class="n">${eur(Y.net)}</td></tr>
+  <tr><td>Media su ${months} mesi</td><td class="n">${eur(Math.round(Y.in/months))}</td><td class="n">${eur(Math.round(Y.out/months))}</td><td class="n">${eur(Math.round(Y.net/months))}</td><td></td><td></td></tr></tfoot></table>`;
+  $('rOut').innerHTML=catTable(byCategory(y,'out'),months);
+  $('rIn').innerHTML=catTable(byCategory(y,'in'),months);
+  const al={};
+  S.accounts.forEach(a=>{const k='Liquidità · '+a.type;al[k]=(al[k]||0)+T.L[a.id].bal});
+  S.invs.forEach(i=>{const k='Investimenti · '+i.cls;al[k]=(al[k]||0)+position(i).value});
+  const rows=Object.entries(al).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
+  $('rAlloc').innerHTML=rows.length?`<table><thead><tr><th>Voce</th><th class="n">Valore</th><th class="n">%</th><th></th></tr></thead><tbody>${rows.map(([k,v])=>{const p=T.nw?v/T.nw:0;return `<tr><td>${esc(k)}</td><td class="n ${sg(v)}">${eur(v)}</td><td class="n">${pct(p)}</td><td><div class="bar"><i style="width:${Math.max(0,Math.min(100,p*100)).toFixed(1)}%"></i></div></td></tr>`}).join('')}</tbody><tfoot><tr><td>Patrimonio netto</td><td class="n">${eur(T.nw)}</td><td class="n">100,00 %</td><td></td></tr></tfoot></table>`:'<p class="mut">Nessun dato.</p>';
+}
+
+function renderSet(){
+  const used=id=>S.tx.some(t=>t.categoryId===id);
+  $('catList').innerHTML=`<table><thead><tr><th>Categoria</th><th>Tipo</th><th class="n">Movimenti</th><th></th></tr></thead><tbody>${[...S.categories].sort((a,b)=>a.kind.localeCompare(b.kind)||a.name.localeCompare(b.name)).map(c=>`<tr><td>${esc(c.name)}</td><td class="${c.kind==='in'?'pos':'neg'}">${c.kind==='in'?'Entrata':'Uscita'}</td><td class="n">${S.tx.filter(t=>t.categoryId===c.id).length}</td><td><button class="x" data-act="renCat" data-id="${c.id}">Rinomina</button>${used(c.id)?'':`<button class="x del" data-act="delCat" data-id="${c.id}">✕</button>`}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function render(){
+  fillSelects();
+  const T=totals();
+  $('hNw').textContent=eur(T.nw);$('hNw').className=sg(T.nw);
+  renderDash(T);renderTx();renderAcc(T);renderInv(T);renderRep(T);renderSet();
+}
+const commit=()=>{save();render()};
+
+/* ---------- EVENTI ---------- */
+$('nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.tab));try{localStorage.setItem(KEY+'_tab',b.dataset.tab)}catch(e){}};
+try{const t=localStorage.getItem(KEY+'_tab');if(t)document.querySelector(`nav button[data-tab="${t}"]`)?.click()}catch(e){}
+
+$('tType').onchange=syncTxForm;
+function resetTx(){editing=null;$('txF').reset();$('tDate').value=today();$('tTitle').textContent='Nuovo movimento';$('tBtn').textContent='Aggiungi';$('tCancel').hidden=true;syncTxForm()}
+$('tCancel').onclick=resetTx;
+$('txF').onsubmit=e=>{
+  e.preventDefault();
+  const type=$('tType').value,amount=cents($('tAmt').value);
+  if(!amount||amount<=0)return alert('Inserisci un importo positivo (es. 12,50). Il segno è dato dal tipo di movimento.');
+  if(!S.accounts.length)return alert('Crea prima un conto.');
+  const t={id:editing||uid(),ts:Date.now(),type,date:$('tDate').value,amount,accountId:$('tAcc').value,note:$('tNote').value.trim()};
+  if(type==='transfer'){t.toAccountId=$('tTo').value;if(t.toAccountId===t.accountId)return alert('Conto di origine e destinazione devono essere diversi.')}
+  else{t.categoryId=$('tCat').value;if(!t.categoryId)return alert('Scegli una categoria.')}
+  if(editing){const k=S.tx.findIndex(x=>x.id===editing);t.ts=S.tx[k].ts;S.tx[k]=t}else S.tx.push(t);
+  const keepType=type,keepAcc=t.accountId,keepDate=t.date;
+  resetTx();$('tType').value=keepType;$('tAcc').value=keepAcc;$('tDate').value=keepDate;syncTxForm();
+  commit();$('tAmt').focus();
+};
+['fFrom','fTo','fType','fAcc','fCat','fQ'].forEach(id=>$(id).oninput=renderTx);
+
+$('accF').onsubmit=e=>{e.preventDefault();const init=cents($('aInit').value)??0;S.accounts.push({id:uid(),name:$('aName').value.trim(),type:$('aType').value,initial:init});e.target.reset();commit()};
+$('invF').onsubmit=e=>{e.preventDefault();S.invs.push({id:uid(),name:$('iName').value.trim(),ticker:$('iTick').value.trim(),cls:$('iClass').value,accountId:$('iAcc').value,price:pnum($('iPrice').value)||0});e.target.reset();commit()};
+$('oType').onchange=()=>{const d=$('oType').value==='div';document.querySelectorAll('.oQ').forEach(x=>x.hidden=d);document.querySelector('.oD').hidden=!d};
+$('opF').onsubmit=e=>{
+  e.preventDefault();
+  const i=inv($('oInv').value);if(!i)return alert('Crea prima uno strumento.');
+  const o={id:uid(),invId:i.id,type:$('oType').value,date:$('oDate').value,qty:0,price:0,fees:0,amount:0};
+  if(o.type==='div'){o.amount=cents($('oAmt').value);if(!o.amount||o.amount<=0)return alert('Importo non valido.')}
+  else{
+    o.qty=pnum($('oQty').value);o.price=pnum($('oPrice').value);o.fees=cents($('oFees').value)??0;
+    if(!o.qty||o.qty<=0||o.price===null||o.price<0||o.fees<0)return alert('Quantità, prezzo o commissioni non validi.');
+    if(o.type==='sell'){S.ops.push(o);const held=position(i,o).qty;S.ops.pop();if(o.qty>held+1e-9)return alert('Quantità in vendita ('+num(o.qty)+') superiore a quella posseduta alla data ('+num(held)+').')}
+    if(o.type==='buy'&&!i.price)i.price=o.price;
+  }
+  S.ops.push(o);const d=o.date;e.target.reset();$('oInv').value=i.id;$('oDate').value=d;$('oType').onchange();commit();
+};
+$('catF').onsubmit=e=>{e.preventDefault();S.categories.push({id:uid(),name:$('cName').value.trim(),kind:$('cKind').value});e.target.reset();commit()};
+
+document.body.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.tagName==='INPUT')return;const id=b.dataset.id;
+  switch(b.dataset.act){
+    case 'delTx':if(confirm('Eliminare il movimento?')){S.tx=S.tx.filter(t=>t.id!==id);if(editing===id)resetTx();commit()}break;
+    case 'editTx':{const t=S.tx.find(x=>x.id===id);editing=id;$('tType').value=t.type;syncTxForm();$('tDate').value=t.date;$('tAmt').value=num(t.amount/100,2);$('tAcc').value=t.accountId;if(t.type==='transfer')$('tTo').value=t.toAccountId;else $('tCat').value=t.categoryId;$('tNote').value=t.note||'';$('tTitle').textContent='Modifica movimento';$('tBtn').textContent='Salva modifiche';$('tCancel').hidden=false;window.scrollTo({top:0,behavior:'smooth'});break}
+    case 'delAcc':{const used=S.tx.some(t=>t.accountId===id||t.toAccountId===id)||S.invs.some(i=>i.accountId===id);if(used)return alert('Il conto ha movimenti o investimenti collegati: non può essere eliminato.');if(confirm('Eliminare il conto?')){S.accounts=S.accounts.filter(a=>a.id!==id);commit()}break}
+    case 'renAcc':{const a=acc(id),n=prompt('Nome del conto',a.name);if(n===null)break;const ini=prompt('Saldo iniziale (€)',num(a.initial/100,2));if(ini===null)break;const c=cents(ini);if(c===null)return alert('Importo non valido.');a.name=n.trim()||a.name;a.initial=c;commit();break}
+    case 'delInv':if(confirm('Eliminare lo strumento e tutte le sue operazioni?')){S.invs=S.invs.filter(i=>i.id!==id);S.ops=S.ops.filter(o=>o.invId!==id);commit()}break;
+    case 'delOp':if(confirm('Eliminare l\'operazione?')){S.ops=S.ops.filter(o=>o.id!==id);commit()}break;
+    case 'delCat':if(confirm('Eliminare la categoria?')){S.categories=S.categories.filter(c=>c.id!==id);commit()}break;
+    case 'renCat':{const c=cat(id),n=prompt('Nuovo nome',c.name);if(n&&n.trim()){c.name=n.trim();commit()}break}
+  }
+});
+document.body.addEventListener('change',e=>{if(e.target.dataset.act==='price'){const p=pnum(e.target.value);if(p===null||p<0)return alert('Prezzo non valido.');inv(e.target.dataset.id).price=p;commit()}});
+$('rYear').onchange=()=>renderRep(totals());
+
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+// Sul telefono apre il menu Condividi (es. "Salva su File"), sul computer scarica il file
+async function giveFile(name,text,type){
+  const file=new File([text],name,{type});
+  if(matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:name});return true}catch(e){if(e.name==='AbortError')return false}}
+  download(name,text,type);return true;
+}
+$('bExp').onclick=async()=>{const prev=S.lastBackup;S.lastBackup=Date.now();if(await giveFile('finanze-backup-'+today()+'.json',JSON.stringify(S,null,2),'application/json'))save();else S.lastBackup=prev};
+$('saveSt').onclick=()=>document.querySelector('nav button[data-tab="set"]').click();
+$('bImp').onclick=()=>$('bFile').click();
+$('bFile').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.v||!Array.isArray(d.tx)||!Array.isArray(d.accounts))throw 0;if(confirm('Sostituire tutti i dati attuali con il backup?')){S=d;commit()}}catch(x){alert('File di backup non valido.')}e.target.value=''})};
+$('bCsv').onclick=()=>{
+  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"',it=c=>(c/100).toFixed(2).replace('.',',');
+  const rows=[['Data','Tipo','Conto','Verso conto','Categoria','Descrizione','Importo'].join(';')];
+  [...S.tx].sort(byDate).forEach(t=>rows.push([t.date,TYPE[t.type],q(acc(t.accountId)?.name),q(acc(t.toAccountId)?.name),q(cat(t.categoryId)?.name),q(t.note),it(t.type==='out'?-t.amount:t.amount)].join(';')));
+  giveFile('movimenti-'+today()+'.csv','﻿'+rows.join('\n'),'text/csv');
+};
+$('bReset').onclick=()=>{if(confirm('Cancellare TUTTI i dati? Esporta prima un backup.')&&confirm('Sei sicuro? L\'operazione non è reversibile.')){S=JSON.parse(JSON.stringify(DEF));commit()}};
+
+init();
+</script>
+</body>
+</html>
